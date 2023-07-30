@@ -8,6 +8,7 @@ from models import caption
 from datasets import coco, utils
 from configuration import Config
 import os
+import cv2
 
 parser = argparse.ArgumentParser(description='Image Captioning')
 parser.add_argument('--path', type=str, help='path to image', required=True)
@@ -35,9 +36,16 @@ else:
         raise NotImplementedError('Give valid checkpoint path')
       print("Found checkpoint! Loading!")
       model,_ = caption.build_model(config)
+      model.to(config.device)
       print("Loading Checkpoint...")
-      checkpoint = torch.load(checkpoint_path, map_location='cpu')
+      checkpoint = torch.load(checkpoint_path, map_location='cuda')
       model.load_state_dict(checkpoint['model'])
+
+print("finsiheddddddddddddddddddddddddd")
+torch.save({
+    'model': model.state_dict(),
+}, config.checkpoint)
+
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 start_token = tokenizer.convert_tokens_to_ids(tokenizer._cls_token)
@@ -46,7 +54,7 @@ end_token = tokenizer.convert_tokens_to_ids(tokenizer._sep_token)
 image = Image.open(image_path)
 image = coco.val_transform(image)
 image = image.unsqueeze(0)
-
+image = image.to(config.device)
 
 def create_caption_and_mask(start_token, max_length):
     caption_template = torch.zeros((1, max_length), dtype=torch.long)
@@ -66,7 +74,8 @@ caption, cap_mask = create_caption_and_mask(
 def evaluate():
     model.eval()
     for i in range(config.max_position_embeddings - 1):
-        predictions = model(image, caption, cap_mask)
+        predictions = model(image, caption.to(config.device), cap_mask.to(config.device))
+        print(predictions)
         predictions = predictions[:, i, :]
         predicted_id = torch.argmax(predictions, axis=-1)
 
@@ -78,8 +87,18 @@ def evaluate():
 
     return caption
 
-
 output = evaluate()
+
 result = tokenizer.decode(output[0].tolist(), skip_special_tokens=True)
 #result = tokenizer.decode(output[0], skip_special_tokens=True)
 print(result.capitalize())
+
+
+image = cv2.imread(image_path)
+cv2.putText(img=image, text=result, org=(10, 10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.3, color=(0, 0, 255),thickness=1)
+# show the image, provide window name first
+cv2.imshow('image window', image)
+# add wait key. window waits until user presses a key
+cv2.waitKey(0)
+# and finally destroy/close all open windows
+cv2.destroyAllWindows()

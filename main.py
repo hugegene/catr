@@ -56,15 +56,20 @@ def main(config):
     data_loader_val = DataLoader(dataset_val, config.batch_size,
                                  sampler=sampler_val, drop_last=False, num_workers=config.num_workers)
 
+
     if os.path.exists(config.checkpoint):
         print("Loading Checkpoint...")
         checkpoint = torch.load(config.checkpoint, map_location='cpu')
         model.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-        config.start_epoch = checkpoint['epoch'] + 1
-
+        try:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+            config.start_epoch = checkpoint['epoch'] + 1
+        except:
+            print("loaded model has not optimizer, scheduler and epoch info")
+            
     print("Start Training..")
+    best_loss = 9999
     for epoch in range(config.start_epoch, config.epochs):
         print(f"Epoch: {epoch}")
         epoch_loss = train_one_epoch(
@@ -72,17 +77,19 @@ def main(config):
         lr_scheduler.step()
         print(f"Training Loss: {epoch_loss}")
 
-        torch.save({
-            'model': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'lr_scheduler': lr_scheduler.state_dict(),
-            'epoch': epoch,
-        }, config.checkpoint)
-
         validation_loss = evaluate(model, criterion, data_loader_val, device)
         print(f"Validation Loss: {validation_loss}")
 
-        print()
+        if validation_loss<best_loss:
+            print("saving model")
+            best_loss = validation_loss
+            torch.save({
+                'model': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'lr_scheduler': lr_scheduler.state_dict(),
+                'epoch': epoch,
+                }, config.checkpoint)
+            
 
 
 if __name__ == "__main__":

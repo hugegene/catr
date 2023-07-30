@@ -18,7 +18,7 @@ def under_max(image):
     if image.mode != 'RGB':
         image = image.convert("RGB")
 
-    shape = np.array(image.size, dtype=np.float)
+    shape = np.array(image.size, dtype=float)
     long_dim = max(shape)
     scale = MAX_DIM / long_dim
 
@@ -72,7 +72,8 @@ class CocoCaption(Dataset):
         self.max_length = max_length + 1
 
     def _process(self, image_id):
-        val = str(image_id).zfill(12)
+        # val = str(image_id).zfill(12)
+        val = str(image_id)
         return val + '.jpg'
 
     def __len__(self):
@@ -96,22 +97,44 @@ class CocoCaption(Dataset):
         return image.tensors.squeeze(0), image.mask.squeeze(0), caption, cap_mask
 
 
+# def build_dataset(config, mode='training'):
+#     if mode == 'training':
+#         train_dir = os.path.join(config.dir, 'train2017')
+#         train_file = os.path.join(
+#             config.dir, 'annotations', 'captions_train2017.json')
+#         data = CocoCaption(train_dir, read_json(
+#             train_file), max_length=config.max_position_embeddings, limit=config.limit, transform=train_transform, mode='training')
+#         return data
+
+#     elif mode == 'validation':
+#         val_dir = os.path.join(config.dir, 'val2017')
+#         val_file = os.path.join(
+#             config.dir, 'annotations', 'captions_val2017.json')
+#         data = CocoCaption(val_dir, read_json(
+#             val_file), max_length=config.max_position_embeddings, limit=config.limit, transform=val_transform, mode='validation')
+#         return data
+
+#     else:
+#         raise NotImplementedError(f"{mode} not supported")
+    
+
 def build_dataset(config, mode='training'):
     if mode == 'training':
-        train_dir = os.path.join(config.dir, 'train2017')
+        train_dir = os.path.join(config.dir)
         train_file = os.path.join(
-            config.dir, 'annotations', 'captions_train2017.json')
+            config.dir, 'annotations', 'captions_train.json')
         data = CocoCaption(train_dir, read_json(
             train_file), max_length=config.max_position_embeddings, limit=config.limit, transform=train_transform, mode='training')
         return data
 
     elif mode == 'validation':
-        val_dir = os.path.join(config.dir, 'val2017')
+        val_dir = os.path.join(config.dir)
         val_file = os.path.join(
-            config.dir, 'annotations', 'captions_val2017.json')
+            config.dir, 'annotations', 'captions_val.json')
         data = CocoCaption(val_dir, read_json(
             val_file), max_length=config.max_position_embeddings, limit=config.limit, transform=val_transform, mode='validation')
         return data
 
     else:
         raise NotImplementedError(f"{mode} not supported")
+

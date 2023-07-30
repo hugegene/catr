@@ -6,7 +6,7 @@ class Config(object):
         self.lr = 1e-4
 
         # Epochs
-        self.epochs = 30
+        self.epochs = 80
         self.lr_drop = 20
         self.start_epoch = 0
         self.weight_decay = 1e-4
@@ -19,7 +19,7 @@ class Config(object):
         # Basic
         self.device = 'cuda'
         self.seed = 42
-        self.batch_size = 32
+        self.batch_size = 4
         self.num_workers = 8
         self.checkpoint = './checkpoint.pth'
         self.clip_max_norm = 0.1
@@ -39,5 +39,6 @@ class Config(object):
         self.pre_norm = True
 
         # Dataset
-        self.dir = '../coco'
+        # self.dir = '../coco'
+        self.dir = 'datasets/create_sushi_express_dataset/dataset'
         self.limit = -1
