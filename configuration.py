@@ -40,5 +40,5 @@ class Config(object):
 
         # Dataset
         # self.dir = '../coco'
-        self.dir = 'datasets/create_sushi_express_dataset/dataset'
+        self.dir = 'sushiexpress_dataset'
         self.limit = -1

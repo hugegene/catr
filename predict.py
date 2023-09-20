@@ -51,10 +51,7 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 start_token = tokenizer.convert_tokens_to_ids(tokenizer._cls_token)
 end_token = tokenizer.convert_tokens_to_ids(tokenizer._sep_token)
 
-image = Image.open(image_path)
-image = coco.val_transform(image)
-image = image.unsqueeze(0)
-image = image.to(config.device)
+
 
 def create_caption_and_mask(start_token, max_length):
     caption_template = torch.zeros((1, max_length), dtype=torch.long)
@@ -66,16 +63,12 @@ def create_caption_and_mask(start_token, max_length):
     return caption_template, mask_template
 
 
-caption, cap_mask = create_caption_and_mask(
-    start_token, config.max_position_embeddings)
-
-
 @torch.no_grad()
 def evaluate():
     model.eval()
     for i in range(config.max_position_embeddings - 1):
         predictions = model(image, caption.to(config.device), cap_mask.to(config.device))
-        print(predictions)
+        # print(predictions)
         predictions = predictions[:, i, :]
         predicted_id = torch.argmax(predictions, axis=-1)
 
@@ -87,18 +80,100 @@ def evaluate():
 
     return caption
 
-output = evaluate()
 
-result = tokenizer.decode(output[0].tolist(), skip_special_tokens=True)
-#result = tokenizer.decode(output[0], skip_special_tokens=True)
-print(result.capitalize())
+if image_path.endswith(".json"):
+    import json
+    import shutil
+    from pathlib import Path
+    
+    testresult_folder = "testresult"
+    Path(testresult_folder).mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(testresult_folder)
+    Path(testresult_folder).mkdir(parents=True, exist_ok=True)
+    Path(testresult_folder+"/FP").mkdir(parents=True, exist_ok=True)
+    Path(testresult_folder+"/TP").mkdir(parents=True, exist_ok=True)
+    Path(testresult_folder+"/FN").mkdir(parents=True, exist_ok=True)
+    Path(testresult_folder+"/TN").mkdir(parents=True, exist_ok=True)
+
+    TP = 0
+    FP = 0
+    FN = 0
+    TN = 0
+
+    with open(image_path) as f:
+        data = json.load(f)
+
+    for annotate in data["annotations"]:
+        image_path = os.path.join("sushiexpress_dataset", annotate["image_id"]+".jpg")
+        captionS = annotate["caption"]
+        
+        image = Image.open(image_path)
+        image = coco.val_transform(image)
+        image = image.unsqueeze(0)
+        image = image.to(config.device)
+
+        caption, cap_mask = create_caption_and_mask(start_token, config.max_position_embeddings)
+
+        output = evaluate()
+
+        result = tokenizer.decode(output[0].tolist(), skip_special_tokens=True)
+        result = result.replace(" - ", "-")
+        #result = tokenizer.decode(output[0], skip_special_tokens=True)
+        
+        filename = os.path.basename(image_path)
+
+        savefolder = os.path.join(testresult_folder, result)
+        Path(savefolder).mkdir(parents=True, exist_ok=True)
+        savepath = os.path.join(savefolder, filename)
+
+        if result == captionS and result != "nil":
+            TP += 1
+            outfile = os.path.join(testresult_folder, "TP", filename)
+        elif result == captionS and result == "nil":
+            TN += 1
+            outfile = os.path.join(testresult_folder, "TN", filename)
+        elif result == "nil": 
+            FN += 1
+            outfile = os.path.join(testresult_folder, "FN", filename)
+        else:
+            print("false positive")
+            print(image_path)
+            print("ground truth, ", captionS)
+            print(result.capitalize())
+            outfile = os.path.join(testresult_folder, "FP", filename)
+            FP += 1
+        
+
+        image = cv2.imread(image_path)
+        cv2.putText(img=image, text=result, org=(10, 10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.3, color=(0, 0, 255),thickness=1)
+        # print(savepath)
+        cv2.imwrite(savepath, image)
+else:
+
+    image = Image.open(image_path)
+    image = coco.val_transform(image)
+    image = image.unsqueeze(0)
+    image = image.to(config.device)
 
 
-image = cv2.imread(image_path)
-cv2.putText(img=image, text=result, org=(10, 10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.3, color=(0, 0, 255),thickness=1)
-# show the image, provide window name first
-cv2.imshow('image window', image)
-# add wait key. window waits until user presses a key
-cv2.waitKey(0)
-# and finally destroy/close all open windows
-cv2.destroyAllWindows()
+    caption, cap_mask = create_caption_and_mask(start_token, config.max_position_embeddings)
+
+    output = evaluate()
+
+    result = tokenizer.decode(output[0].tolist(), skip_special_tokens=True)
+    #result = tokenizer.decode(output[0], skip_special_tokens=True)
+    print(result.capitalize())
+
+
+    image = cv2.imread(image_path)
+    cv2.putText(img=image, text=result, org=(10, 10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.3, color=(0, 0, 255),thickness=1)
+    # show the image, provide window name first
+    cv2.imshow('image window', image)
+    # add wait key. window waits until user presses a key
+    cv2.waitKey(0)
+    # and finally destroy/close all open windows
+    cv2.destroyAllWindows()
+
+
+print("TP, TN, FP, FN")
+print(TP, TN, FP, FN)
