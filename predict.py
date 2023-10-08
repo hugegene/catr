@@ -9,6 +9,7 @@ from datasets import coco, utils
 from configuration import Config
 import os
 import cv2
+import json
 
 parser = argparse.ArgumentParser(description='Image Captioning')
 parser.add_argument('--path', type=str, help='path to image', required=True)
@@ -51,7 +52,14 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 start_token = tokenizer.convert_tokens_to_ids(tokenizer._cls_token)
 end_token = tokenizer.convert_tokens_to_ids(tokenizer._sep_token)
 
+f = open("archive/sushi_dict.json")
+sushi2id = json.load(f)
+# print(sushi2id)
+id2sushi ={v:k for k,v in sushi2id.items()}
+# print(id2sushi)
+f.close()
 
+sushi_types = list(id2sushi.keys())
 
 def create_caption_and_mask(start_token, max_length):
     caption_template = torch.zeros((1, max_length), dtype=torch.long)
@@ -106,6 +114,7 @@ if image_path.endswith(".json"):
     for annotate in data["annotations"]:
         image_path = os.path.join("sushiexpress_dataset", annotate["image_id"]+".jpg")
         captionS = annotate["caption"]
+        captionS = id2sushi[captionS]
         
         image = Image.open(image_path)
         image = coco.val_transform(image)
@@ -118,6 +127,7 @@ if image_path.endswith(".json"):
 
         result = tokenizer.decode(output[0].tolist(), skip_special_tokens=True)
         result = result.replace(" - ", "-")
+        result = id2sushi[result]
         #result = tokenizer.decode(output[0], skip_special_tokens=True)
         
         filename = os.path.basename(image_path)
