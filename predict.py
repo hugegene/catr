@@ -40,12 +40,16 @@ else:
       model.to(config.device)
       print("Loading Checkpoint...")
       checkpoint = torch.load(checkpoint_path, map_location='cuda')
+      try:
+          print(checkpoint['epoch'])
+          print(checkpoint['best_loss'])
+      except:
+          pass
       model.load_state_dict(checkpoint['model'])
 
-print("finsiheddddddddddddddddddddddddd")
-torch.save({
-    'model': model.state_dict(),
-}, config.checkpoint)
+# torch.save({
+#     'model': model.state_dict(),
+# }, checkpoint_path)
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
@@ -53,6 +57,7 @@ start_token = tokenizer.convert_tokens_to_ids(tokenizer._cls_token)
 end_token = tokenizer.convert_tokens_to_ids(tokenizer._sep_token)
 
 f = open("archive/sushi_dict.json")
+#f = open("sm2_dataset/annotations/sm2_dict.json")
 #f = open("sushi_lid_dataset/annotations/sushi_dict.json")
 sushi2id = json.load(f)
 # print(sushi2id)
@@ -95,6 +100,8 @@ if image_path.endswith(".json"):
     import shutil
     from pathlib import Path
     
+    print(image_path)
+    
     testresult_folder = "testresult"
     Path(testresult_folder).mkdir(parents=True, exist_ok=True)
     shutil.rmtree(testresult_folder)
@@ -111,10 +118,14 @@ if image_path.endswith(".json"):
 
     with open(image_path) as f:
         data = json.load(f)
-
+    print(len(data["annotations"]))
+    
     for annotate in data["annotations"]:
+
         image_path = os.path.join("sushiexpress_dataset", annotate["image_id"]+".jpg")
+
         #image_path = os.path.join("sushi_lid_dataset", annotate["image_id"]+".jpg")
+        #image_path = os.path.join(config.dir, annotate["image_id"]+".jpg")
         captionS = annotate["caption"]
         captionS = id2sushi[captionS]
         
@@ -126,7 +137,7 @@ if image_path.endswith(".json"):
         caption, cap_mask = create_caption_and_mask(start_token, config.max_position_embeddings)
 
         output = evaluate()
-
+        
         result = tokenizer.decode(output[0].tolist(), skip_special_tokens=True)
         result = result.replace(" - ", "-")
         

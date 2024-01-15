@@ -6,8 +6,12 @@ from PIL import Image
 import numpy as np
 import random
 import os
+import cv2
 
 from transformers import BertTokenizer
+
+import imgaug as ia
+import imgaug.augmenters as iaa
 
 from .utils import nested_tensor_from_tensor_list, read_json
 
@@ -36,8 +40,22 @@ class RandomRotation:
         angle = random.choice(self.angles)
         return TF.rotate(x, angle, expand=True)
 
+class Fogging:
+    def __init__(self,):
+        self.seq = iaa.Sequential([iaa.CloudLayer([190,255], [-2.5,1.5], [0,10], [0, 0.3], [0,0.5], 1, -1.5, 1, 1)], random_order=True)
+
+    def __call__(self, x):
+        in_image = x.convert('RGB')
+        img_np = np.asarray(in_image)
+        open_cv_image = img_np[:, :, ::-1].copy()
+        augimage = self.seq(images=[open_cv_image])[0]
+        img = cv2.cvtColor(augimage, cv2.COLOR_BGR2RGB)
+        im_pil = Image.fromarray(img)
+
+        return im_pil
 
 train_transform = tv.transforms.Compose([
+    #Fogging(),
     RandomRotation(),
     tv.transforms.Lambda(under_max),
     tv.transforms.ColorJitter(brightness=[0.5, 1.3], contrast=[
@@ -82,6 +100,8 @@ class CocoCaption(Dataset):
     def __getitem__(self, idx):
         image_id, caption = self.annot[idx]
         image = Image.open(os.path.join(self.root, image_id))
+
+        # image = image = cv2.imread(os.path.join(self.root, image_id))
 
         if self.transform:
             image = self.transform(image)

@@ -17,11 +17,14 @@ class Caption(nn.Module):
         self.mlp = MLP(hidden_dim, 512, vocab_size, 3)
 
     def forward(self, samples, target, target_mask):
+
         if not isinstance(samples, NestedTensor):
             samples = nested_tensor_from_tensor_list(samples)
-
+        
         features, pos = self.backbone(samples)
         src, mask = features[-1].decompose()
+        # print(src.shape) #src.shape = torch.Size([1, 2048, 14, 19])
+        # print(mask.shape) #mask.shape = torch.Size([1, 14, 19])
 
         assert mask is not None
 

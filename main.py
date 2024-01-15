@@ -11,6 +11,9 @@ from datasets import coco
 from configuration import Config
 from engine import train_one_epoch, evaluate
 
+import warnings
+warnings.filterwarnings('ignore')
+
 
 def main(config):
     device = torch.device(config.device)
@@ -70,7 +73,10 @@ def main(config):
             
     print("Start Training..")
     best_loss = 9999
+    best_epoch = 0
     for epoch in range(config.start_epoch, config.epochs):
+        print("best epoch: ", best_epoch)
+        print("best loss: ", best_loss)
         print(f"Epoch: {epoch}")
         epoch_loss = train_one_epoch(
             model, criterion, data_loader_train, optimizer, device, epoch, config.clip_max_norm)
@@ -81,6 +87,7 @@ def main(config):
         print(f"Validation Loss: {validation_loss}")
 
         if validation_loss<best_loss:
+            best_epoch = epoch
             print("saving model")
             best_loss = validation_loss
             torch.save({
@@ -88,6 +95,7 @@ def main(config):
                 'optimizer': optimizer.state_dict(),
                 'lr_scheduler': lr_scheduler.state_dict(),
                 'epoch': epoch,
+                'best_loss':best_loss,
                 }, config.checkpoint)
             
 

@@ -42,8 +42,12 @@ class Transformer(nn.Module):
         # flatten NxCxHxW to HWxNxC
         bs, c, h, w = src.shape
         src = src.flatten(2).permute(2, 0, 1)
+        # print(src.shape) #src.shape = torch.Size([266, 1, 256])
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        # print(pos_embed.shape) #pos_embed.shape =torch.Size([266, 1, 256])
+        # print(mask.shape) #torch.Size([1, 14, 19])
         mask = mask.flatten(1)
+        # print(mask.shape) #torch.Size([1, 266])
 
         tgt = self.embeddings(tgt).permute(1, 0, 2)
         query_embed = self.embeddings.position_embeddings.weight.unsqueeze(1)

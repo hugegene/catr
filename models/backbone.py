@@ -94,7 +94,14 @@ class Joiner(nn.Sequential):
         super().__init__(backbone, position_embedding)
 
     def forward(self, tensor_list: NestedTensor):
+        
+        # print(tensor_list.decompose()[0].shape) #tensor_list[0].shape = torch.Size([1, 3, 214, 299]), image
+        # print(tensor_list.decompose()[1].shape) #tensor_list[1].shape = torch.Size([1, 214, 299]), mask
+
         xs = self[0](tensor_list)
+        # print(xs['0'].decompose()[0].shape) #tensor_list[0].shape = torch.Size([1, 2048, 14, 19]), 
+        # print(xs['0'].decompose()[1].shape) #tensor_list[0].shape = torch.Size([1, 14, 19])
+
         out: List[NestedTensor] = []
         pos = []
         for name, x in xs.items():
