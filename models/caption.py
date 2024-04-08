@@ -21,6 +21,9 @@ class Caption(nn.Module):
         if not isinstance(samples, NestedTensor):
             samples = nested_tensor_from_tensor_list(samples)
         
+        # print("right at start")
+        # print(samples.decompose()[0].shape, samples.decompose()[1].shape)
+
         features, pos = self.backbone(samples)
         src, mask = features[-1].decompose()
         # print(src.shape) #src.shape = torch.Size([1, 2048, 14, 19])
@@ -30,7 +33,10 @@ class Caption(nn.Module):
 
         hs = self.transformer(self.input_proj(src), mask,
                               pos[-1], target, target_mask)
+        # print("out shape")
+        # print(hs.shape)
         out = self.mlp(hs.permute(1, 0, 2))
+        # print(out.shape)
         return out
 
 

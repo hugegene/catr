@@ -41,7 +41,10 @@ class Transformer(nn.Module):
     def forward(self, src, mask, pos_embed, tgt, tgt_mask):
         # flatten NxCxHxW to HWxNxC
         bs, c, h, w = src.shape
+        # print("transformer src shape")
+        # print(src.shape)
         src = src.flatten(2).permute(2, 0, 1)
+        
         # print(src.shape) #src.shape = torch.Size([266, 1, 256])
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
         # print(pos_embed.shape) #pos_embed.shape =torch.Size([266, 1, 256])
@@ -50,10 +53,15 @@ class Transformer(nn.Module):
         # print(mask.shape) #torch.Size([1, 266])
 
         tgt = self.embeddings(tgt).permute(1, 0, 2)
+        # print(tgt.shape)
         query_embed = self.embeddings.position_embeddings.weight.unsqueeze(1)
         query_embed = query_embed.repeat(1, bs, 1)
+        # print("query embedding")
+        # print(query_embed.shape)
 
         memory = self.encoder(src, src_key_padding_mask=mask, pos=pos_embed)
+        # print("this is my memory.........", memory.shape)
+
         hs = self.decoder(tgt, memory, memory_key_padding_mask=mask, tgt_key_padding_mask=tgt_mask,
                           pos=pos_embed, query_pos=query_embed,
                           tgt_mask=generate_square_subsequent_mask(len(tgt)).to(tgt.device))

@@ -73,6 +73,10 @@ class BackboneBase(nn.Module):
             assert m is not None
             mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
             out[name] = NestedTensor(x, mask)
+        
+        # print(out['0'].decompose()[0].shape)
+        # print("cnn out decompose mask")
+        # print(out['0'].decompose()[1])
         return out
 
 
@@ -94,11 +98,12 @@ class Joiner(nn.Sequential):
         super().__init__(backbone, position_embedding)
 
     def forward(self, tensor_list: NestedTensor):
-        
+        # print("forwarding")
         # print(tensor_list.decompose()[0].shape) #tensor_list[0].shape = torch.Size([1, 3, 214, 299]), image
         # print(tensor_list.decompose()[1].shape) #tensor_list[1].shape = torch.Size([1, 214, 299]), mask
 
         xs = self[0](tensor_list)
+
         # print(xs['0'].decompose()[0].shape) #tensor_list[0].shape = torch.Size([1, 2048, 14, 19]), 
         # print(xs['0'].decompose()[1].shape) #tensor_list[0].shape = torch.Size([1, 14, 19])
 
